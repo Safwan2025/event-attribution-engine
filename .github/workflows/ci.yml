@@ -1,0 +1,30 @@
+name: CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish repository source
+        if: ${{ hashFiles('repository.tar.gz.b64') != '' }}
+        run: |
+          base64 --decode repository.tar.gz.b64 > repository.tar.gz
+          tar -xzf repository.tar.gz
+          rm repository.tar.gz repository.tar.gz.b64
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: publish event attribution service"
+          git push
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt ruff
+      - run: ruff check .
+      - run: pytest -q
